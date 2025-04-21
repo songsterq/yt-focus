@@ -7,6 +7,11 @@ function hideContent() {
             hidePlayables: true    // default value
         },
         (preferences) => {
+            // Early return if nothing needs to be hidden
+            if (!preferences.hideShorts && !preferences.hidePlayables) {
+                return;
+            }
+
             // Hide content in the sidebar based on preferences
             const sidebarSelectors = [];
             if (preferences.hideShorts) {
@@ -21,29 +26,39 @@ function hideContent() {
                 );
             }
 
-            sidebarSelectors.forEach(selector => {
-                const elements = document.querySelectorAll(selector);
-                elements.forEach(element => {
-                    const container = element.closest('ytd-guide-entry-renderer, ytd-mini-guide-entry-renderer');
-                    if (container) {
-                        container.style.display = 'none';
-                    }
+            // Only query DOM if we have selectors to look for
+            if (sidebarSelectors.length > 0) {
+                sidebarSelectors.forEach(selector => {
+                    const elements = document.querySelectorAll(selector);
+                    elements.forEach(element => {
+                        const container = element.closest('ytd-guide-entry-renderer, ytd-mini-guide-entry-renderer');
+                        if (container) {
+                            container.style.display = 'none';
+                        }
+                    });
                 });
-            });
+            }
 
             // Hide content from the main feed based on preferences
             const shelfElements = document.querySelectorAll('ytd-rich-shelf-renderer');
             shelfElements.forEach(element => {
                 const title = element.querySelector('span#title');
                 if (title) {
-                    const isShorts = title.textContent.includes('Shorts');
+                    let shouldHide = false;
+
+                    if (preferences.hideShorts && title.textContent.includes('Shorts')) {
+                        shouldHide = true;
+                    }
                     
-                    // Check for Playables by looking for the link
-                    const playablesLink = element.querySelector('a[href^="/playables"]');
-                    const isPlayables = !!playablesLink;
+                    if (!shouldHide && preferences.hidePlayables) {
+                        // Only check for Playables link if we haven't already decided to hide
+                        const playablesLink = element.querySelector('a[href^="/playables"]');
+                        if (playablesLink) {
+                            shouldHide = true;
+                        }
+                    }
                     
-                    if ((preferences.hideShorts && isShorts) || 
-                        (preferences.hidePlayables && isPlayables)) {
+                    if (shouldHide) {
                         element.style.display = 'none';
                     }
                 }
