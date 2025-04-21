@@ -10,9 +10,13 @@ function hideShorts() {
     }
 
     // Hide Shorts from the main content
-    const shortsElements = document.querySelectorAll('ytd-reel-shelf-renderer, ytd-reel-item-renderer');
+    const shortsElements = document.querySelectorAll('ytd-rich-shelf-renderer');
     shortsElements.forEach(element => {
-        element.style.display = 'none';
+        // Check if the element contains Shorts content
+        const title = element.querySelector('span#title');
+        if (title && title.textContent.includes('Shorts')) {
+            element.style.display = 'none';
+        }
     });
 }
 
