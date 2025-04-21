@@ -39,9 +39,8 @@ function hideContent() {
                 });
             }
 
-            // Hide content from the main feed based on preferences
-            const shelfElements = document.querySelectorAll('ytd-rich-shelf-renderer');
-            shelfElements.forEach(element => {
+            // Hide content from the main feed and recommendations sidebar
+            const hideShelfElement = (element) => {
                 const title = element.querySelector('span#title');
                 if (title) {
                     let shouldHide = false;
@@ -62,7 +61,11 @@ function hideContent() {
                         element.style.display = 'none';
                     }
                 }
-            });
+            };
+
+            // Handle both rich shelf (main feed) and reel shelf (recommendations sidebar)
+            const shelfElements = document.querySelectorAll('ytd-rich-shelf-renderer, ytd-reel-shelf-renderer');
+            shelfElements.forEach(hideShelfElement);
         }
     );
 }
