@@ -17,7 +17,7 @@ function hideContent() {
             }
             if (preferences.hidePlayables) {
                 sidebarSelectors.push(
-                    'a[title="Playables"]'  // Expanded state Playables
+                    'a[href^="/playables"]'  // Playables link (works for all languages)
                 );
             }
 
@@ -37,7 +37,10 @@ function hideContent() {
                 const title = element.querySelector('span#title');
                 if (title) {
                     const isShorts = title.textContent.includes('Shorts');
-                    const isPlayables = title.textContent.includes('Playables');
+                    
+                    // Check for Playables by looking for the link
+                    const playablesLink = element.querySelector('a[href^="/playables"]');
+                    const isPlayables = !!playablesLink;
                     
                     if ((preferences.hideShorts && isShorts) || 
                         (preferences.hidePlayables && isPlayables)) {
