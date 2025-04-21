@@ -1,31 +1,52 @@
-// Function to hide YouTube Shorts and Playables
+// Function to hide YouTube Shorts and Playables based on preferences
 function hideContent() {
-    // Hide Shorts and Playables from the sidebar (both expanded and collapsed states)
-    const sidebarShortsSelectors = [
-        'a[title="Shorts"]',  // Expanded state Shorts
-        'ytd-mini-guide-entry-renderer[aria-label="Shorts"]',  // Collapsed state Shorts
-        'a[title="Playables"]',  // Expanded state Playables
-    ];
-
-    sidebarShortsSelectors.forEach(selector => {
-        const elements = document.querySelectorAll(selector);
-        elements.forEach(element => {
-            const container = element.closest('ytd-guide-entry-renderer, ytd-mini-guide-entry-renderer');
-            if (container) {
-                container.style.display = 'none';
+    // Get current preferences
+    chrome.storage.sync.get(
+        {
+            hideShorts: true,      // default value
+            hidePlayables: true    // default value
+        },
+        (preferences) => {
+            // Hide content in the sidebar based on preferences
+            const sidebarSelectors = [];
+            if (preferences.hideShorts) {
+                sidebarSelectors.push(
+                    'a[title="Shorts"]',  // Expanded state Shorts
+                    'ytd-mini-guide-entry-renderer[aria-label="Shorts"]'  // Collapsed state Shorts
+                );
             }
-        });
-    });
+            if (preferences.hidePlayables) {
+                sidebarSelectors.push(
+                    'a[title="Playables"]'  // Expanded state Playables
+                );
+            }
 
-    // Hide Shorts and Playables from the main content
-    const shelfElements = document.querySelectorAll('ytd-rich-shelf-renderer');
-    shelfElements.forEach(element => {
-        // Check if the element contains Shorts or Playables content
-        const title = element.querySelector('span#title');
-        if (title && (title.textContent.includes('Shorts') || title.textContent.includes('Playables'))) {
-            element.style.display = 'none';
+            sidebarSelectors.forEach(selector => {
+                const elements = document.querySelectorAll(selector);
+                elements.forEach(element => {
+                    const container = element.closest('ytd-guide-entry-renderer, ytd-mini-guide-entry-renderer');
+                    if (container) {
+                        container.style.display = 'none';
+                    }
+                });
+            });
+
+            // Hide content from the main feed based on preferences
+            const shelfElements = document.querySelectorAll('ytd-rich-shelf-renderer');
+            shelfElements.forEach(element => {
+                const title = element.querySelector('span#title');
+                if (title) {
+                    const isShorts = title.textContent.includes('Shorts');
+                    const isPlayables = title.textContent.includes('Playables');
+                    
+                    if ((preferences.hideShorts && isShorts) || 
+                        (preferences.hidePlayables && isPlayables)) {
+                        element.style.display = 'none';
+                    }
+                }
+            });
         }
-    });
+    );
 }
 
 // Run the function when the page loads

@@ -2,8 +2,11 @@
   "manifest_version": 3,
   "name": "YouTube Focus",
   "version": "1.0",
-  "description": "Hide YouTube Shorts to help you focus on longer form content",
-  "permissions": ["activeTab"],
+  "description": "Hide YouTube Shorts and Playables to help you focus on long form content.",
+  "permissions": ["activeTab", "storage", "tabs"],
+  "action": {
+    "default_popup": "popup.html"
+  },
   "content_scripts": [
     {
       "matches": ["*://*.youtube.com/*"],

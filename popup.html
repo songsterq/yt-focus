@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>YouTube Focus</title>
+  <style>
+    body {
+      width: 200px;
+      padding: 15px;
+      font-family: Arial, sans-serif;
+    }
+    h2 {
+      font-size: 16px;
+      margin: 0 0 15px 0;
+    }
+    .option {
+      margin: 8px 0;
+      display: flex;
+      align-items: center;
+    }
+    label {
+      cursor: pointer;
+      user-select: none;
+      font-size: 14px;
+    }
+    input[type="checkbox"] {
+      margin-right: 8px;
+    }
+    #status {
+      font-size: 12px;
+      color: green;
+      margin-top: 10px;
+      height: 15px;
+    }
+  </style>
+</head>
+<body>
+  <h2>YouTube Focus</h2>
+  <div class="option">
+    <label>
+      <input type="checkbox" id="hideShorts" checked>
+      Hide Shorts
+    </label>
+  </div>
+  <div class="option">
+    <label>
+      <input type="checkbox" id="hidePlayables" checked>
+      Hide Playables
+    </label>
+  </div>
+  <div id="status"></div>
+  <script src="popup.js"></script>
+</body>
+</html> 
