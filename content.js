@@ -1,13 +1,19 @@
 // Function to hide YouTube Shorts
 function hideShorts() {
     // Hide Shorts from the sidebar
-    const sidebarShorts = document.querySelector('a[title="Shorts"]');
-    if (sidebarShorts) {
-        const shortsContainer = sidebarShorts.closest('ytd-guide-entry-renderer');
-        if (shortsContainer) {
-            shortsContainer.style.display = 'none';
-        }
-    }
+    const sidebarShortsSelectors = [
+        'a[title="Shorts"]',
+    ];
+
+    sidebarShortsSelectors.forEach(selector => {
+        const shortsElements = document.querySelectorAll(selector);
+        shortsElements.forEach(element => {
+            const container = element.closest('ytd-guide-entry-renderer, ytd-mini-guide-entry-renderer'); // both expanded and collapsed states
+            if (container) {
+                container.style.display = 'none';
+            }
+        });
+    });
 
     // Hide Shorts from the main content
     const shortsElements = document.querySelectorAll('ytd-rich-shelf-renderer');
