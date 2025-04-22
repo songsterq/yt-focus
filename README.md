@@ -1,11 +1,10 @@
 # YouTube Focus
 
-A Chrome extension that helps you focus on longer form content by hiding YouTube Shorts.
+A Chrome extension that helps you focus on longer form content by hiding YouTube Shorts and Playables.
 
 ## Features
 
-- Hides the Shorts section from the YouTube sidebar
-- Removes Shorts content from the main feed
+- Hides Shorts and Playables from the YouTube sidebar, main feed and recommendations.
 - Works automatically when you visit YouTube
 
 ## Installation
