@@ -15,13 +15,6 @@ function saveOptions() {
       setTimeout(() => {
         status.textContent = '';
       }, 1500);
-
-      // Notify content script that settings have changed
-      chrome.tabs.query({url: '*://*.youtube.com/*'}, function(tabs) {
-        tabs.forEach(function(tab) {
-          chrome.tabs.reload(tab.id);
-        });
-      });
     }
   );
 }

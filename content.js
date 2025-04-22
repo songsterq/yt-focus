@@ -7,59 +7,49 @@ function hideContent() {
             hidePlayables: true    // default value
         },
         (preferences) => {
-            // Early return if nothing needs to be hidden
-            if (!preferences.hideShorts && !preferences.hidePlayables) {
-                return;
-            }
+            // Handle sidebar elements
+            // First, get all potential elements we might need to show/hide
+            const shortsElements = document.querySelectorAll('a[title="Shorts"], ytd-mini-guide-entry-renderer[aria-label="Shorts"]');
+            const playablesElements = document.querySelectorAll('a[href^="/playables"]');
 
-            // Hide content in the sidebar based on preferences
-            const sidebarSelectors = [];
-            if (preferences.hideShorts) {
-                sidebarSelectors.push(
-                    'a[title="Shorts"]',  // Expanded state Shorts
-                    'ytd-mini-guide-entry-renderer[aria-label="Shorts"]'  // Collapsed state Shorts
-                );
-            }
-            if (preferences.hidePlayables) {
-                sidebarSelectors.push(
-                    'a[href^="/playables"]'  // Playables link (works for all languages)
-                );
-            }
+            // Show/hide Shorts in sidebar
+            shortsElements.forEach(element => {
+                const container = element.closest('ytd-guide-entry-renderer, ytd-mini-guide-entry-renderer');
+                if (container) {
+                    container.style.display = preferences.hideShorts ? 'none' : '';
+                }
+            });
 
-            // Only query DOM if we have selectors to look for
-            if (sidebarSelectors.length > 0) {
-                sidebarSelectors.forEach(selector => {
-                    const elements = document.querySelectorAll(selector);
-                    elements.forEach(element => {
-                        const container = element.closest('ytd-guide-entry-renderer, ytd-mini-guide-entry-renderer');
-                        if (container) {
-                            container.style.display = 'none';
-                        }
-                    });
-                });
-            }
+            // Show/hide Playables in sidebar
+            playablesElements.forEach(element => {
+                const container = element.closest('ytd-guide-entry-renderer, ytd-mini-guide-entry-renderer');
+                if (container) {
+                    container.style.display = preferences.hidePlayables ? 'none' : '';
+                }
+            });
 
-            // Hide content from the main feed and recommendations sidebar
+            // Handle content in the main feed and recommendations sidebar
             const hideShelfElement = (element) => {
                 const title = element.querySelector('span#title');
                 if (title) {
                     let shouldHide = false;
 
-                    if (preferences.hideShorts && title.textContent.includes('Shorts')) {
+                    // Check for Shorts
+                    const isShorts = title.textContent.includes('Shorts');
+                    if (isShorts && preferences.hideShorts) {
                         shouldHide = true;
                     }
                     
-                    if (!shouldHide && preferences.hidePlayables) {
-                        // Only check for Playables link if we haven't already decided to hide
+                    // Check for Playables
+                    if (!shouldHide) {  // Only check if not already hiding
                         const playablesLink = element.querySelector('a[href^="/playables"]');
-                        if (playablesLink) {
+                        if (playablesLink && preferences.hidePlayables) {
                             shouldHide = true;
                         }
                     }
                     
-                    if (shouldHide) {
-                        element.style.display = 'none';
-                    }
+                    // Show or hide based on our checks
+                    element.style.display = shouldHide ? 'none' : '';
                 }
             };
 
@@ -72,6 +62,13 @@ function hideContent() {
 
 // Run the function when the page loads
 hideContent();
+
+// Listen for changes in storage
+chrome.storage.onChanged.addListener((changes, namespace) => {
+    if (namespace === 'sync' && (changes.hideShorts || changes.hidePlayables)) {
+        hideContent();
+    }
+});
 
 // Also run when new content is loaded (for dynamic content)
 const observer = new MutationObserver(hideContent);
