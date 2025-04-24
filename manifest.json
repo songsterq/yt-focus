@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "YouTube Focus",
-  "version": "1.0",
+  "version": "1.0.1",
   "description": "Hide YouTube Shorts and Playables to reduce distractions and focus on long-form content that matters to you.",
   "permissions": ["activeTab", "storage"],
   "action": {
