@@ -1,5 +1,7 @@
 # YouTube Focus
 
+View in [chrome web store](https://chromewebstore.google.com/detail/youtube-focus/dppgailgbpncddkeccgfiplmdonfloja).
+
 A Chrome extension that helps you focus on longer form content by hiding YouTube Shorts and Playables.
 
 ## Features
