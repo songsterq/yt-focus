@@ -28,9 +28,18 @@ function hideContent() {
                 }
             });
 
-            // Handle content in the main feed and recommendations sidebar
-            const hideShelfElement = (element) => {
-                const title = element.querySelector('span#title');
+            // Handle ytd-reel-shelf-renderer (Shorts in recommendations sidebar)
+            if (preferences.hideShorts) {
+                const reelShelves = document.querySelectorAll('ytd-reel-shelf-renderer');
+                reelShelves.forEach(element => {
+                    element.style.display = 'none';
+                });
+            }
+
+            // Handle ytd-rich-shelf-renderer (Shorts/Playables in main feed)
+            const hideRichShelfElement = (element) => {
+                // Try to find title element (can be span#title or yt-formatted-string#title)
+                const title = element.querySelector('span#title, yt-formatted-string#title');
                 if (title) {
                     let shouldHide = false;
 
@@ -53,9 +62,8 @@ function hideContent() {
                 }
             };
 
-            // Handle both rich shelf (main feed) and reel shelf (recommendations sidebar)
-            const shelfElements = document.querySelectorAll('ytd-rich-shelf-renderer, ytd-reel-shelf-renderer');
-            shelfElements.forEach(hideShelfElement);
+            const richShelfElements = document.querySelectorAll('ytd-rich-shelf-renderer');
+            richShelfElements.forEach(hideRichShelfElement);
         }
     );
 }
