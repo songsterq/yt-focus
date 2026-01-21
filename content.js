@@ -1,3 +1,20 @@
+// Function to auto-skip ads when skip button is available
+function autoSkipAds() {
+    chrome.storage.sync.get(
+        {
+            autoSkipAds: true    // default value
+        },
+        (preferences) => {
+            if (preferences.autoSkipAds) {
+                const skipButton = document.querySelector('.ytp-skip-ad-button, .ytp-ad-skip-button-modern');
+                if (skipButton) {
+                    skipButton.click();
+                }
+            }
+        }
+    );
+}
+
 // Function to hide YouTube Shorts and Playables based on preferences
 function hideContent() {
     // Get current preferences
@@ -73,13 +90,21 @@ hideContent();
 
 // Listen for changes in storage
 chrome.storage.onChanged.addListener((changes, namespace) => {
-    if (namespace === 'sync' && (changes.hideShorts || changes.hidePlayables)) {
-        hideContent();
+    if (namespace === 'sync') {
+        if (changes.hideShorts || changes.hidePlayables) {
+            hideContent();
+        }
+        if (changes.autoSkipAds) {
+            autoSkipAds();
+        }
     }
 });
 
 // Also run when new content is loaded (for dynamic content)
-const observer = new MutationObserver(hideContent);
+const observer = new MutationObserver(() => {
+    hideContent();
+    autoSkipAds();
+});
 observer.observe(document.body, {
     childList: true,
     subtree: true
