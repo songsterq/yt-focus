@@ -1,19 +1,91 @@
-// Function to auto-skip ads when skip button is available
-function autoSkipAds() {
-    chrome.storage.sync.get(
-        {
-            autoSkipAds: true    // default value
-        },
-        (preferences) => {
+// AdSkipManager: Dedicated module for detecting and skipping ads
+const AdSkipManager = (() => {
+    let adModuleObserver = null;
+    let isInitialized = false;
+
+    const SKIP_BUTTON_SELECTORS = [
+        '.ytp-skip-ad-button',
+        '.ytp-ad-skip-button',
+        '.ytp-ad-skip-button-modern'
+    ].join(', ');
+
+    const AD_MODULE_SELECTORS = [
+        '.ytp-ad-module',
+        '#movie_player .ytp-ad-module'
+    ];
+
+    function trySkipAd() {
+        chrome.storage.sync.get({ autoSkipAds: true }, (preferences) => {
             if (preferences.autoSkipAds) {
-                const skipButton = document.querySelector('.ytp-skip-ad-button, .ytp-ad-skip-button-modern');
+                const skipButton = document.querySelector(SKIP_BUTTON_SELECTORS);
                 if (skipButton) {
                     skipButton.click();
                 }
             }
+        });
+    }
+
+    function hasAdContent(adModule) {
+        return adModule && adModule.children.length > 0;
+    }
+
+    function attachAdModuleObserver(adModule) {
+        if (adModuleObserver) {
+            return;
         }
-    );
-}
+
+        adModuleObserver = new MutationObserver(() => {
+            if (hasAdContent(adModule)) {
+                trySkipAd();
+            }
+        });
+
+        adModuleObserver.observe(adModule, {
+            childList: true,
+            subtree: true
+        });
+
+        if (hasAdContent(adModule)) {
+            trySkipAd();
+        }
+    }
+
+    function findAndAttachToAdModule() {
+        if (adModuleObserver) {
+            return true;
+        }
+
+        for (const selector of AD_MODULE_SELECTORS) {
+            const adModule = document.querySelector(selector);
+            if (adModule) {
+                attachAdModuleObserver(adModule);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    function init(mainObserverCallback) {
+        if (isInitialized) {
+            return;
+        }
+        isInitialized = true;
+
+        findAndAttachToAdModule();
+    }
+
+    function onMutation() {
+        if (!adModuleObserver) {
+            findAndAttachToAdModule();
+        }
+    }
+
+    return {
+        init,
+        onMutation,
+        trySkipAd
+    };
+})();
 
 // Function to hide YouTube Shorts and Playables based on preferences
 function hideContent() {
@@ -87,6 +159,7 @@ function hideContent() {
 
 // Run the function when the page loads
 hideContent();
+AdSkipManager.init();
 
 // Listen for changes in storage
 chrome.storage.onChanged.addListener((changes, namespace) => {
@@ -95,7 +168,7 @@ chrome.storage.onChanged.addListener((changes, namespace) => {
             hideContent();
         }
         if (changes.autoSkipAds) {
-            autoSkipAds();
+            AdSkipManager.trySkipAd();
         }
     }
 });
@@ -103,7 +176,7 @@ chrome.storage.onChanged.addListener((changes, namespace) => {
 // Also run when new content is loaded (for dynamic content)
 const observer = new MutationObserver(() => {
     hideContent();
-    autoSkipAds();
+    AdSkipManager.onMutation();
 });
 observer.observe(document.body, {
     childList: true,
