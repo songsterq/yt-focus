@@ -1,6 +1,7 @@
 // AdSkipManager: Dedicated module for detecting and skipping ads
 const AdSkipManager = (() => {
     let adModuleObserver = null;
+    let skipCheckInterval = null;
     let isInitialized = false;
 
     const SKIP_BUTTON_SELECTORS = [
@@ -29,6 +30,20 @@ const AdSkipManager = (() => {
         return adModule && adModule.children.length > 0;
     }
 
+    function startSkipCheckInterval() {
+        if (skipCheckInterval) {
+            return;
+        }
+        skipCheckInterval = setInterval(trySkipAd, 500);
+    }
+
+    function stopSkipCheckInterval() {
+        if (skipCheckInterval) {
+            clearInterval(skipCheckInterval);
+            skipCheckInterval = null;
+        }
+    }
+
     function attachAdModuleObserver(adModule) {
         if (adModuleObserver) {
             return;
@@ -37,6 +52,9 @@ const AdSkipManager = (() => {
         adModuleObserver = new MutationObserver(() => {
             if (hasAdContent(adModule)) {
                 trySkipAd();
+                startSkipCheckInterval();
+            } else {
+                stopSkipCheckInterval();
             }
         });
 
@@ -44,10 +62,6 @@ const AdSkipManager = (() => {
             childList: true,
             subtree: true
         });
-
-        if (hasAdContent(adModule)) {
-            trySkipAd();
-        }
     }
 
     function findAndAttachToAdModule() {
