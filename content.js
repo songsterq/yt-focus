@@ -16,12 +16,51 @@ const AdSkipManager = (() => {
     ];
 
     function trySkipAd() {
+        console.log('[AdSkipManager] Attempting to skip ad...');
         chrome.storage.sync.get({ autoSkipAds: true }, (preferences) => {
             if (preferences.autoSkipAds) {
                 const skipButton = document.querySelector(SKIP_BUTTON_SELECTORS);
                 if (skipButton) {
+                    console.log('[AdSkipManager] Skip button found:', {
+                        type: typeof skipButton,
+                        tagName: skipButton.tagName,
+                        className: skipButton.className,
+                        id: skipButton.id,
+                        disabled: skipButton.disabled,
+                        visible: skipButton.offsetParent !== null,
+                        display: window.getComputedStyle(skipButton).display,
+                        pointerEvents: window.getComputedStyle(skipButton).pointerEvents,
+                        element: skipButton
+                    });
+                    
+                    // Highlight the button with a border
+                    skipButton.style.border = '3px solid #ff0000';
+                    skipButton.style.boxShadow = '0 0 10px rgba(255, 0, 0, 0.8)';
+                    skipButton.style.outline = '2px solid #ff0000';
+                    skipButton.style.outlineOffset = '2px';
+                    
+                    // Try multiple click methods
+                    console.log('[AdSkipManager] Attempting click method 1: .click()');
                     skipButton.click();
+                    
+                    // Try dispatching a click event
+                    console.log('[AdSkipManager] Attempting click method 2: dispatchEvent');
+                    const clickEvent = new MouseEvent('click', {
+                        bubbles: true,
+                        cancelable: true,
+                        view: window
+                    });
+                    skipButton.dispatchEvent(clickEvent);
+                    
+                    // Try mousedown + mouseup
+                    console.log('[AdSkipManager] Attempting click method 3: mousedown + mouseup');
+                    skipButton.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
+                    skipButton.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, cancelable: true }));
+                } else {
+                    console.log('[AdSkipManager] Skip button not found');
                 }
+            } else {
+                console.log('[AdSkipManager] Auto-skip ads is disabled');
             }
         });
     }
@@ -34,11 +73,13 @@ const AdSkipManager = (() => {
         if (skipCheckInterval) {
             return;
         }
+        console.log('[AdSkipManager] Starting ad check interval');
         skipCheckInterval = setInterval(trySkipAd, 500);
     }
 
     function stopSkipCheckInterval() {
         if (skipCheckInterval) {
+            console.log('[AdSkipManager] Stopping ad check interval');
             clearInterval(skipCheckInterval);
             skipCheckInterval = null;
         }
@@ -51,9 +92,11 @@ const AdSkipManager = (() => {
 
         adModuleObserver = new MutationObserver(() => {
             if (hasAdContent(adModule)) {
+                console.log('[AdSkipManager] Ad content detected by observer');
                 trySkipAd();
                 startSkipCheckInterval();
             } else {
+                console.log('[AdSkipManager] Ad content no longer detected by observer');
                 stopSkipCheckInterval();
             }
         });
