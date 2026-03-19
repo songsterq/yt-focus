@@ -9,4 +9,7 @@ Thumbs.db
 
 # Chrome Extension development
 *.pem
-*.crx 
+*.crx
+
+# Build output
+build/ 
