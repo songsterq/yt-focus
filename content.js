@@ -15,52 +15,43 @@ const AdSkipManager = (() => {
         '#movie_player .ytp-ad-module'
     ];
 
+    function skipViaVideo() {
+        const video = document.querySelector('video.html5-main-video, video');
+        if (video && isFinite(video.duration) && video.duration > 0) {
+            console.log('[AdSkipManager] Skipping ad via video seek');
+            video.currentTime = video.duration;
+            return true;
+        }
+        return false;
+    }
+
     function trySkipAd() {
-        console.log('[AdSkipManager] Attempting to skip ad...');
         chrome.storage.sync.get({ autoSkipAds: true }, (preferences) => {
-            if (preferences.autoSkipAds) {
-                const skipButton = document.querySelector(SKIP_BUTTON_SELECTORS);
-                if (skipButton) {
-                    console.log('[AdSkipManager] Skip button found:', {
-                        type: typeof skipButton,
-                        tagName: skipButton.tagName,
-                        className: skipButton.className,
-                        id: skipButton.id,
-                        disabled: skipButton.disabled,
-                        visible: skipButton.offsetParent !== null,
-                        display: window.getComputedStyle(skipButton).display,
-                        pointerEvents: window.getComputedStyle(skipButton).pointerEvents,
-                        element: skipButton
-                    });
-                    
-                    // Highlight the button with a border
-                    skipButton.style.border = '3px solid #ff0000';
-                    skipButton.style.boxShadow = '0 0 10px rgba(255, 0, 0, 0.8)';
-                    skipButton.style.outline = '2px solid #ff0000';
-                    skipButton.style.outlineOffset = '2px';
-                    
-                    // Try multiple click methods
-                    console.log('[AdSkipManager] Attempting click method 1: .click()');
-                    skipButton.click();
-                    
-                    // Try dispatching a click event
-                    console.log('[AdSkipManager] Attempting click method 2: dispatchEvent');
-                    const clickEvent = new MouseEvent('click', {
-                        bubbles: true,
-                        cancelable: true,
-                        view: window
-                    });
-                    skipButton.dispatchEvent(clickEvent);
-                    
-                    // Try mousedown + mouseup
-                    console.log('[AdSkipManager] Attempting click method 3: mousedown + mouseup');
-                    skipButton.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
-                    skipButton.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, cancelable: true }));
-                } else {
-                    console.log('[AdSkipManager] Skip button not found');
+            if (!preferences.autoSkipAds) return;
+
+            const skipButton = document.querySelector(SKIP_BUTTON_SELECTORS);
+            if (skipButton) {
+                console.log('[AdSkipManager] Skip button found:', skipButton.className);
+
+                // Highlight the button for debugging
+                skipButton.style.border = '4px solid #ff0000';
+                skipButton.style.boxShadow = 'none';
+                skipButton.style.outline = 'none';
+                skipButton.style.outlineOffset = '';
+
+                // Find the actual <button> inside the container (if the match is a wrapper div)
+                const actualButton = skipButton.tagName === 'BUTTON'
+                    ? skipButton
+                    : skipButton.querySelector('button');
+
+                if (actualButton) {
+                    actualButton.click();
                 }
-            } else {
-                console.log('[AdSkipManager] Auto-skip ads is disabled');
+
+                // Fallback: skip by seeking the video to the end
+                if (!skipViaVideo()) {
+                    console.log('[AdSkipManager] Video seek fallback failed');
+                }
             }
         });
     }
