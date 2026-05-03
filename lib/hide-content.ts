@@ -24,10 +24,12 @@ function applyRichShelves(prefs: Preferences) {
     const title = shelf.querySelector(sel.RICH_SHELF_TITLE);
     if (!title) continue;
     const isShorts = title.textContent?.includes('Shorts') ?? false;
-    const hasPlayablesLink = !!shelf.querySelector(sel.PLAYABLES_SIDEBAR_LINK);
+    // Note: PLAYABLES_SIDEBAR_LINK is reused here as a presence probe inside
+    // the shelf — same selector, different context from the sidebar usage.
     const shouldHide =
       (isShorts && prefs.hideShorts) ||
-      (hasPlayablesLink && prefs.hidePlayables);
+      (prefs.hidePlayables &&
+        !!shelf.querySelector(sel.PLAYABLES_SIDEBAR_LINK));
     setHidden(shelf, shouldHide);
   }
 }

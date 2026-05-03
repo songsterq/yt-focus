@@ -14,15 +14,18 @@ export type Preferences = {
 };
 
 export async function getPreferences(): Promise<Preferences> {
-  return {
-    hideShorts: await hideShortsPref.getValue(),
-    hidePlayables: await hidePlayablesPref.getValue(),
-  };
+  const [hideShorts, hidePlayables] = await Promise.all([
+    hideShortsPref.getValue(),
+    hidePlayablesPref.getValue(),
+  ]);
+  return { hideShorts, hidePlayables };
 }
 
 export function watchPreferences(
   cb: (prefs: Preferences) => void,
 ): () => void {
+  // If both prefs change in one storage event, cb fires twice with the same
+  // final snapshot. Consumers must be idempotent.
   const u1 = hideShortsPref.watch(() => {
     void getPreferences().then(cb);
   });
