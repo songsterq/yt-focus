@@ -8,8 +8,7 @@
     "dev": "wxt",
     "build": "wxt build",
     "compile": "wxt build --debug && tsc --noEmit",
-    "zip": "wxt zip",
-    "postinstall": "wxt prepare"
+    "zip": "wxt zip"
   },
   "devDependencies": {
     "wxt": "^0.20.0",
