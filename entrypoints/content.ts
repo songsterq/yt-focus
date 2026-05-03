@@ -8,18 +8,18 @@ import {
 
 export default defineContentScript({
   matches: ['*://*.youtube.com/*'],
-  async main() {
+  async main(ctx) {
     let prefs: Preferences = await getPreferences();
     applyHiding(prefs);
 
-    watchPreferences((next) => {
+    const unwatch = watchPreferences((next) => {
       prefs = next;
       applyHiding(prefs);
     });
+    ctx.onInvalidated(unwatch);
 
-    new MutationObserver(() => applyHiding(prefs)).observe(document.body, {
-      childList: true,
-      subtree: true,
-    });
+    const observer = new MutationObserver(() => applyHiding(prefs));
+    observer.observe(document.body, { childList: true, subtree: true });
+    ctx.onInvalidated(() => observer.disconnect());
   },
 });
