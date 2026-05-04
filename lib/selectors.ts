@@ -12,4 +12,4 @@ export const VIDEO_ELEMENT = '#movie_player video';
 export const CC_BUTTON = '.ytp-subtitles-button';
 export const CC_SETTINGS_MENU = '.ytp-popup.ytp-settings-menu';
 export const CC_SETTINGS_PANEL = '.ytp-panel-menu';
-export const NATIVE_CAPTION_WINDOW = '.ytp-caption-window-container';
+export const NATIVE_CAPTION_WINDOW = '.caption-window';
