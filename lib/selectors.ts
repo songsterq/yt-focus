@@ -6,3 +6,10 @@ export const SIDEBAR_ENTRY_CONTAINER =
 export const REEL_SHELF = 'ytd-reel-shelf-renderer';
 export const RICH_SHELF = 'ytd-rich-shelf-renderer';
 export const RICH_SHELF_TITLE = 'span#title, yt-formatted-string#title';
+
+export const MOVIE_PLAYER = '#movie_player';
+export const VIDEO_ELEMENT = '#movie_player video';
+export const CC_BUTTON = '.ytp-subtitles-button';
+export const CC_SETTINGS_MENU = '.ytp-popup.ytp-settings-menu';
+export const CC_SETTINGS_PANEL = '.ytp-panel-menu';
+export const NATIVE_CAPTION_WINDOW = '.caption-window';

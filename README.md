@@ -1,13 +1,14 @@
-# YouTube Focus
+# YouTube Focus & Learn
 
 View in [chrome web store](https://chromewebstore.google.com/detail/youtube-focus/dppgailgbpncddkeccgfiplmdonfloja).
 
-A Chrome extension that helps you focus on longer form content by hiding YouTube Shorts and Playables.
+A Chrome extension that turns YouTube into a calmer place to watch and learn from long-form content. Hides Shorts and Playables to remove distractions, and overlays a secondary subtitle alongside YouTube's native captions to help with language learning.
 
 ## Features
 
-- Hides Shorts and Playables from the YouTube sidebar, main feed and recommendations.
-- Works automatically when you visit YouTube
+- Hides Shorts and Playables from the YouTube sidebar, main feed, and recommendations.
+- Shows a secondary subtitle in your chosen language alongside the native captions, mirroring YouTube's own caption styling and following the caption box when you drag it.
+- Works automatically when you visit YouTube.
 
 ## Installation
 
