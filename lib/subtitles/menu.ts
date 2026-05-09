@@ -44,12 +44,52 @@ function secondaryLabel(s: SecondarySelection): string {
   return `Auto-translate → ${lang?.label ?? s.targetLang}`;
 }
 
+function makeCcTwoIcon(): SVGElement {
+  // Mirrors YouTube's "CC" menu icon (white-outlined rounded rectangle filling
+  // the icon slot) with "CC2" inside to denote the secondary track. textLength
+  // condenses the 3 glyphs to match the visual weight of YT's 2-glyph "CC".
+  const ns = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(ns, 'svg');
+  svg.setAttribute('width', '36');
+  svg.setAttribute('height', '36');
+  svg.setAttribute('viewBox', '0 0 36 36');
+
+  const rect = document.createElementNS(ns, 'rect');
+  rect.setAttribute('x', '4');
+  rect.setAttribute('y', '8');
+  rect.setAttribute('width', '28');
+  rect.setAttribute('height', '20');
+  rect.setAttribute('rx', '3');
+  rect.setAttribute('ry', '3');
+  rect.setAttribute('fill', 'none');
+  rect.setAttribute('stroke', '#fff');
+  rect.setAttribute('stroke-width', '2');
+
+  const text = document.createElementNS(ns, 'text');
+  text.setAttribute('x', '18');
+  text.setAttribute('y', '18');
+  text.setAttribute('text-anchor', 'middle');
+  text.setAttribute('dominant-baseline', 'central');
+  text.setAttribute('textLength', '22');
+  text.setAttribute('lengthAdjust', 'spacingAndGlyphs');
+  text.setAttribute('font-family', '"YouTube Sans", "Roboto", "Arial", sans-serif');
+  text.setAttribute('font-size', '14');
+  text.setAttribute('font-weight', '900');
+  text.setAttribute('fill', '#fff');
+  text.textContent = 'CC2';
+
+  svg.appendChild(rect);
+  svg.appendChild(text);
+  return svg;
+}
+
 function makeRow(opts: {
   label: string;
   value?: string;
   hasArrow?: boolean;
   onClick?: (e: MouseEvent) => void;
   ariaChecked?: boolean;
+  icon?: SVGElement;
 }): HTMLDivElement {
   const row = document.createElement('div');
   row.className = 'ytp-menuitem';
@@ -62,6 +102,7 @@ function makeRow(opts: {
 
   const icon = document.createElement('div');
   icon.className = 'ytp-menuitem-icon';
+  if (opts.icon) icon.appendChild(opts.icon);
 
   const label = document.createElement('div');
   label.className = 'ytp-menuitem-label';
@@ -185,6 +226,7 @@ export function injectMenu(cb: MenuCallbacks): MenuHandle {
         value: secondaryLabel(cb.getSecondary()),
         hasArrow: true,
         onClick: openSecondaryPanel,
+        icon: makeCcTwoIcon(),
       });
       row.setAttribute(ROW_FLAG, '1');
     }
