@@ -2,9 +2,9 @@ import { defineConfig } from 'wxt';
 
 export default defineConfig({
   manifest: {
-    name: 'YouTube Focus',
+    name: 'YouTube Focus & Learn',
     description:
-      'Hide YouTube Shorts and Playables to reduce distractions and focus on long-form content that matters to you.',
+      'Focus on long-form YouTube and learn from it: hide Shorts and Playables, and show a secondary subtitle in the language you are learning.',
     permissions: ['storage'],
     icons: {
       16: '/icons/icon16.png',
