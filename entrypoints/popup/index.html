@@ -114,6 +114,19 @@
     input[type="text"] {
       margin-top: 6px;
     }
+    .count-pill {
+      font-size: 11px;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+      color: var(--fg-muted);
+      background: var(--hover-bg);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 1px 8px;
+      min-width: 24px;
+      text-align: center;
+      user-select: none;
+    }
     #status {
       font-size: 11px;
       color: var(--status);
@@ -189,10 +202,12 @@
     <div class="option">
       <input type="checkbox" id="hideShorts">
       <label for="hideShorts">Hide Shorts</label>
+      <span class="count-pill" id="shortsHiddenCount" hidden>0</span>
     </div>
     <div class="option">
       <input type="checkbox" id="hidePlayables">
       <label for="hidePlayables">Hide Playables</label>
+      <span class="count-pill" id="playablesHiddenCount" hidden>0</span>
     </div>
   </div>
 
