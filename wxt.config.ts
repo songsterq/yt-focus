@@ -4,7 +4,7 @@ export default defineConfig({
   manifest: {
     name: 'YouTube Focus & Learn',
     description:
-      'Focus on long-form YouTube and learn from it: hide Shorts and Playables, and show a secondary subtitle in the language you are learning.',
+      'Hide YouTube Shorts & Playables, plus dual subtitles to learn a language while you watch. Focus + fluency, free.',
     permissions: ['storage'],
     icons: {
       16: '/icons/icon16.png',

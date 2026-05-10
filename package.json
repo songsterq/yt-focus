@@ -1,7 +1,7 @@
 {
   "name": "yt-focus",
   "version": "1.0.5",
-  "description": "Focus on long-form YouTube and learn from it: hide Shorts and Playables, and show a secondary subtitle in the language you are learning.",
+  "description": "Hide YouTube Shorts & Playables, plus dual subtitles to learn a language while you watch. Focus + fluency, free.",
   "private": true,
   "type": "module",
   "scripts": {
