@@ -18,7 +18,7 @@ export const hidePlayablesPref = storage.defineItem<boolean>('sync:hidePlayables
 
 export const dualSubtitlesEnabledPref = storage.defineItem<boolean>(
   'sync:dualSubtitlesEnabled',
-  { fallback: false },
+  { fallback: true },
 );
 
 export const secondaryLanguagePref = storage.defineItem<string>(
