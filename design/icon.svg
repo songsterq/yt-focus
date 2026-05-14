@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <title>YouTube Focus &amp; Learn</title>
+  <rect width="128" height="128" rx="26" fill="#E62117"/>
+  <circle cx="64" cy="50" r="34" fill="none" stroke="#FFFFFF" stroke-width="8"/>
+  <circle cx="64" cy="50" r="18" fill="none" stroke="#FFFFFF" stroke-width="8"/>
+  <circle cx="64" cy="50" r="5" fill="#FFC107"/>
+  <rect x="36" y="98" width="56" height="10" rx="5" fill="#FFFFFF"/>
+  <rect x="44" y="114" width="40" height="8" rx="4" fill="#FFC107"/>
+</svg>
