@@ -2,7 +2,7 @@ import { defineConfig } from 'wxt';
 
 export default defineConfig({
   manifest: {
-    name: 'YouTube Focus & Learn',
+    name: 'YouTube Focus & Learn - Dual Subtitles',
     description:
       'Hide YouTube Shorts & Playables, plus dual subtitles to learn a language while you watch. Focus + fluency, free.',
     permissions: ['storage'],
