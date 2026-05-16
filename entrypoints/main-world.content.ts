@@ -102,10 +102,6 @@ function rememberTimedTextContext(body: unknown) {
       osVersion: client.osVersion,
       platform: client.platform,
     };
-    console.log('[yt-focus][main-world] captured subtitle PO token', {
-      clientName: timedTextState.context.clientName,
-      clientVersion: timedTextState.context.clientVersion,
-    });
   } catch {
     // Ignore non-JSON player requests.
   }
@@ -118,10 +114,6 @@ function rememberTimedTextContextFromUrl(url: string) {
     ...timedTextState.context,
     ...context,
   };
-  console.log('[yt-focus][main-world] captured subtitle PO token from timedtext', {
-    clientName: timedTextState.context.clientName,
-    clientVersion: timedTextState.context.clientVersion,
-  });
 }
 
 function requestUrl(input: RequestInfo | URL): string {
@@ -188,7 +180,6 @@ export default defineContentScript({
   world: 'MAIN',
   runAt: 'document_start',
   main() {
-    console.log('[yt-focus][main-world] loaded');
     watchPlayerRequests();
     window.addEventListener('message', (event) => {
       if (event.source !== window) return;

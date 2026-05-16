@@ -115,7 +115,6 @@ async function tryFormat(
     translateTo: opts?.translateTo,
     timedTextContext: opts?.timedTextContext,
   });
-  console.log('[yt-focus] fetchCues attempt', { fmt: fmt ?? '(none)', url });
   let body: string;
   try {
     body = await fetchText(url, opts?.signal);
@@ -123,11 +122,6 @@ async function tryFormat(
     console.warn('[yt-focus] fetch threw', { fmt, err });
     return isRateLimitedError(err) ? { type: 'rate-limited' } : { type: 'empty' };
   }
-  console.log('[yt-focus] response', {
-    fmt: fmt ?? '(none)',
-    bytes: body.length,
-    preview: body.slice(0, 80),
-  });
   if (!body) return { type: 'empty' };
   let cues: Cue[] = [];
   if (fmt === 'json3') {
@@ -162,16 +156,6 @@ export async function fetchCues(
   opts?: { translateTo?: string; signal?: AbortSignal },
 ): Promise<Cue[]> {
   const timedTextContext = await getTimedTextContext(track, opts?.signal);
-  const base = buildTimedTextUrl(track, null, {
-    translateTo: opts?.translateTo,
-    timedTextContext,
-  });
-  console.log('[yt-focus] fetchCues for', {
-    lang: track.languageCode,
-    translateTo: opts?.translateTo ?? null,
-    baseUrl: base,
-    hasPoToken: Boolean(timedTextContext?.poToken),
-  });
   if (track.baseUrl.includes('exp=xpe') && !timedTextContext?.poToken) {
     console.warn(
       '[yt-focus] timedtext URL requires a subtitle PO token, but none was captured',

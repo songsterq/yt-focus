@@ -84,7 +84,6 @@ export function startDualSubtitles(
 
   const startSecondary = async () => {
     fetchCtl?.abort();
-    console.log('[yt-focus] startSecondary', secondary);
     if (secondary.type === 'off') {
       sync?.stop();
       sync = null;
@@ -112,20 +111,12 @@ export function startDualSubtitles(
         primary &&
         primary.vssId !== secondary.track.vssId
       ) {
-        console.log(
-          '[yt-focus] native track yielded 0 cues; retrying as translate from primary',
-        );
         cues = await fetchCues(primary, {
           translateTo: secondary.track.languageCode,
           signal: ctl.signal,
         });
       }
       if (ctl.signal.aborted) return;
-      console.log('[yt-focus] cues loaded', {
-        count: cues.length,
-        first: cues[0],
-        last: cues[cues.length - 1],
-      });
       const video = document.querySelector<HTMLVideoElement>(sel.VIDEO_ELEMENT);
       if (!video) {
         console.warn('[yt-focus] startSecondary aborted: no <video>');
@@ -134,12 +125,7 @@ export function startDualSubtitles(
       if (sync) {
         sync.setCues(cues);
       } else if (overlay) {
-        let firstActive = true;
         sync = startSync(video, cues, (text) => {
-          if (firstActive && text) {
-            firstActive = false;
-            console.log('[yt-focus] first active cue', text);
-          }
           overlay?.setText(text);
           updateOverlayVisibility();
         });
@@ -156,24 +142,12 @@ export function startDualSubtitles(
   };
 
   const setupForCurrentPage = async () => {
-    if (stopped || !prefs.dualSubtitlesEnabled) {
-      console.log('[yt-focus] setup skipped', {
-        stopped,
-        enabled: prefs.dualSubtitlesEnabled,
-      });
-      return;
-    }
-    if (!WATCH_PATH.test(location.pathname)) {
-      console.log('[yt-focus] setup skipped: not /watch', location.pathname);
-      return;
-    }
+    if (stopped || !prefs.dualSubtitlesEnabled) return;
+    if (!WATCH_PATH.test(location.pathname)) return;
 
     const setupId = ++setupSeq;
     const player = document.querySelector<HTMLElement>(sel.MOVIE_PLAYER);
-    if (!player) {
-      console.log('[yt-focus] setup skipped: no #movie_player');
-      return;
-    }
+    if (!player) return;
 
     // If the URL videoId differs from the one we last set up for, the previous
     // session is stale — clear it now so the user doesn't see old cues during
@@ -188,28 +162,15 @@ export function startDualSubtitles(
     const result = await discoverTracks();
     if (stopped || setupId !== setupSeq) return;
     const setupKey = `${result.videoId ?? new URL(location.href).searchParams.get('v') ?? location.href}:${prefs.secondaryLanguage}`;
-    if (activeSetupKey === setupKey) {
-      console.log('[yt-focus] setup skipped: already initialized', setupKey);
-      return;
-    }
+    if (activeSetupKey === setupKey) return;
 
     tearDown();
     activeSetupKey = setupKey;
     tracks = result.tracks;
-    console.log('[yt-focus] tracks discovered', {
-      videoId: result.videoId,
-      count: tracks.length,
-      tracks,
-    });
     if (tracks.length === 0) return;
 
     primary = pickDefaultPrimary(tracks);
     secondary = pickDefaultSecondary(tracks, primary, prefs.secondaryLanguage);
-    console.log('[yt-focus] initial state', {
-      primary,
-      secondary,
-      secondaryLang: prefs.secondaryLanguage,
-    });
 
     overlay = mountOverlay(player);
     menu = injectMenu({

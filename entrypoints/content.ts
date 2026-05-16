@@ -12,7 +12,6 @@ export default defineContentScript({
   matches: ['*://*.youtube.com/*'],
   async main(ctx) {
     let prefs: Preferences = await getPreferences();
-    console.log('[yt-focus][content] loaded', prefs);
 
     const counter = createHiddenCounter();
 
