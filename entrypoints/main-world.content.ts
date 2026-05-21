@@ -1,5 +1,8 @@
 import { defineContentScript } from '#imports';
-import { timedTextContextFromUrl } from '@/lib/subtitles/timedtext-url';
+import {
+  displayedLangFromUrl,
+  timedTextContextFromUrl,
+} from '@/lib/subtitles/timedtext-url';
 
 type Request = {
   source: 'yt-focus-req';
@@ -20,11 +23,13 @@ type TimedTextContext = {
 
 type TimedTextState = {
   context: TimedTextContext | null;
+  displayedLang: string | null;
   installed: boolean;
 };
 
 const timedTextState = ((window as any).__ytFocusTimedTextState ??= {
   context: null,
+  displayedLang: null,
   installed: false,
 }) as TimedTextState;
 
@@ -116,6 +121,24 @@ function rememberTimedTextContextFromUrl(url: string) {
   };
 }
 
+// URLs the extension has fetched itself, so the patched fetch can skip them
+// when tracking what YouTube is displaying. Without this, our own secondary
+// subtitle fetch would set displayedLang to our own track's language and
+// cause the picker to revert to off.
+const ownFetchUrls = new Set<string>();
+
+function rememberDisplayedLangFromUrl(url: string) {
+  if (ownFetchUrls.has(url)) return;
+  const lang = displayedLangFromUrl(url);
+  if (!lang) return;
+  if (lang === timedTextState.displayedLang) return;
+  timedTextState.displayedLang = lang;
+  window.postMessage(
+    { source: 'yt-focus-event', kind: 'displayedLang', value: lang },
+    '*',
+  );
+}
+
 function requestUrl(input: RequestInfo | URL): string {
   if (typeof input === 'string') return input;
   if (input instanceof URL) return input.href;
@@ -130,6 +153,7 @@ function watchPlayerRequests() {
   window.fetch = function patchedFetch(input, init) {
     const url = requestUrl(input);
     rememberTimedTextContextFromUrl(url);
+    rememberDisplayedLangFromUrl(url);
     if (url.includes('/youtubei/v1/player')) {
       if (typeof init?.body === 'string') {
         rememberTimedTextContext(init.body);
@@ -157,6 +181,7 @@ function watchPlayerRequests() {
     const urlString = String(url);
     xhrUrls.set(this, urlString);
     rememberTimedTextContextFromUrl(urlString);
+    rememberDisplayedLangFromUrl(urlString);
     return originalOpen.call(
       this,
       method,
@@ -197,12 +222,16 @@ export default defineContentScript({
           case 'getTimedTextContext':
             reply(msg.id, true, timedTextState.context);
             return;
+          case 'getDisplayedLang':
+            reply(msg.id, true, timedTextState.displayedLang);
+            return;
           case 'fetchText': {
             // Run the network request from the page's main world so that
             // headers (Sec-Fetch-*, client-version sniffs, etc.) match what
             // YT's own player sends. Content-script fetches from the isolated
             // world have been observed to return 200/empty for timedtext URLs.
             const url = (msg as { payload?: unknown }).payload as string;
+            ownFetchUrls.add(url);
             fetch(url, { credentials: 'include' })
               .then(async (res) => {
                 if (!res.ok) {
@@ -217,7 +246,8 @@ export default defineContentScript({
                 const body = await res.text();
                 reply(msg.id, true, body);
               })
-              .catch((err) => reply(msg.id, false, String(err)));
+              .catch((err) => reply(msg.id, false, String(err)))
+              .finally(() => ownFetchUrls.delete(url));
             return;
           }
           default:

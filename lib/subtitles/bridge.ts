@@ -6,8 +6,11 @@ type Pending = {
   reject: (reason: Error) => void;
 };
 
+type EventCb = (value: unknown) => void;
+
 let nextId = 0;
 const pending = new Map<number, Pending>();
+const eventSubscribers = new Map<string, Set<EventCb>>();
 let installed = false;
 
 function ensureInstalled() {
@@ -16,16 +19,37 @@ function ensureInstalled() {
   window.addEventListener('message', (event) => {
     if (event.source !== window) return;
     const msg = event.data as
-      | { source?: string; id?: number; ok?: boolean; result?: unknown }
+      | {
+          source?: string;
+          id?: number;
+          ok?: boolean;
+          result?: unknown;
+          kind?: string;
+          value?: unknown;
+        }
       | undefined;
-    if (!msg || msg.source !== 'yt-focus-res') return;
-    const id = msg.id;
-    if (typeof id !== 'number') return;
-    const cb = pending.get(id);
-    if (!cb) return;
-    pending.delete(id);
-    if (msg.ok) cb.resolve(msg.result);
-    else cb.reject(new Error(String(msg.result ?? 'bridge error')));
+    if (!msg) return;
+    if (msg.source === 'yt-focus-res') {
+      const id = msg.id;
+      if (typeof id !== 'number') return;
+      const cb = pending.get(id);
+      if (!cb) return;
+      pending.delete(id);
+      if (msg.ok) cb.resolve(msg.result);
+      else cb.reject(new Error(String(msg.result ?? 'bridge error')));
+      return;
+    }
+    if (msg.source === 'yt-focus-event' && typeof msg.kind === 'string') {
+      const subs = eventSubscribers.get(msg.kind);
+      if (!subs) return;
+      for (const cb of subs) {
+        try {
+          cb(msg.value);
+        } catch {
+          // swallow subscriber errors so one bad handler doesn't break others
+        }
+      }
+    }
   });
 }
 
@@ -66,4 +90,26 @@ export function bridgeFetchText(url: string): Promise<string> {
   // Longer timeout; some videos with very large transcripts can take a few
   // seconds to assemble.
   return call<string>('fetchText', url, 15000);
+}
+
+export function bridgeGetDisplayedLang(): Promise<string | null> {
+  return call<string | null>('getDisplayedLang');
+}
+
+export function subscribeBridgeEvent<T>(
+  kind: string,
+  cb: (value: T) => void,
+): () => void {
+  ensureInstalled();
+  let set = eventSubscribers.get(kind);
+  if (!set) {
+    set = new Set();
+    eventSubscribers.set(kind, set);
+  }
+  const wrapped: EventCb = (v) => cb(v as T);
+  set.add(wrapped);
+  return () => {
+    set!.delete(wrapped);
+    if (set!.size === 0) eventSubscribers.delete(kind);
+  };
 }

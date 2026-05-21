@@ -112,3 +112,17 @@ export function timedTextContextFromUrl(url: string): TimedTextContext | null {
     platform: parsed.searchParams.get('cplatform') ?? undefined,
   };
 }
+
+export function displayedLangFromUrl(url: string): string | null {
+  let parsed: URL;
+  try {
+    parsed = new URL(
+      url,
+      typeof location === 'undefined' ? 'https://www.youtube.com' : location.href,
+    );
+  } catch {
+    return null;
+  }
+  if (parsed.pathname !== '/api/timedtext') return null;
+  return parsed.searchParams.get('tlang') || parsed.searchParams.get('lang') || null;
+}

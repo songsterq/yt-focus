@@ -1,5 +1,6 @@
 import * as sel from '../selectors';
 import type { Preferences } from '../preferences';
+import { bridgeGetDisplayedLang, subscribeBridgeEvent } from './bridge';
 import { discoverTracks } from './discover';
 import { fetchCues } from './fetch';
 import { startSync, type SyncHandle } from './sync';
@@ -19,26 +20,43 @@ function pickDefaultPrimary(tracks: CaptionTrack[]): CaptionTrack | null {
 
 function pickDefaultSecondary(
   tracks: CaptionTrack[],
-  primary: CaptionTrack | null,
+  sourceTrack: CaptionTrack | null,
+  effectivePrimaryLang: string | null,
   secondaryLang: string,
 ): SecondarySelection {
-  if (tracks.length === 0 || !primary) return { type: 'off' };
-  // If there's a native track in the secondary language that's not the
-  // primary, prefer it (avoids machine translation when avoidable).
-  const native = tracks.find(
-    (t) => t.languageCode === secondaryLang && t.vssId !== primary.vssId,
-  );
+  if (tracks.length === 0 || !sourceTrack) return { type: 'off' };
+  // effectivePrimaryLang reflects what YT is actually showing (tlang || lang
+  // from the most recent /api/timedtext URL), not just the source track's
+  // language. When unknown (no caption fetch observed yet), fall back to the
+  // source language.
+  const effective = effectivePrimaryLang ?? sourceTrack.languageCode;
+  if (effective === secondaryLang) return { type: 'off' };
+  // Prefer a native track in the secondary language, even when it is the
+  // source track itself (e.g. YT is auto-translating English source to
+  // Japanese; user wants English secondary — that's the source track, and
+  // its menu label is the clean "English" rather than "Auto-translate → English").
+  const native = tracks.find((t) => t.languageCode === secondaryLang);
   if (native) return { type: 'native', track: native };
-  // Otherwise translate the primary track to the secondary language.
-  if (primary.languageCode === secondaryLang) {
-    // Same language as primary; nothing useful to add.
-    return { type: 'off' };
-  }
   return {
     type: 'translate',
-    sourceTrack: primary,
+    sourceTrack,
     targetLang: secondaryLang,
   };
+}
+
+function sameSelection(a: SecondarySelection, b: SecondarySelection): boolean {
+  if (a.type !== b.type) return false;
+  if (a.type === 'off') return true;
+  if (a.type === 'native' && b.type === 'native') {
+    return a.track.vssId === b.track.vssId;
+  }
+  if (a.type === 'translate' && b.type === 'translate') {
+    return (
+      a.sourceTrack.vssId === b.sourceTrack.vssId &&
+      a.targetLang === b.targetLang
+    );
+  }
+  return false;
 }
 
 export function startDualSubtitles(
@@ -53,11 +71,17 @@ export function startDualSubtitles(
   let primary: CaptionTrack | null = null;
   let secondary: SecondarySelection = { type: 'off' };
   let secondaryUserOverride = false;
+  let captionState: { ccOn: boolean; displayedLang: string | null } = {
+    ccOn: false,
+    displayedLang: null,
+  };
 
   let overlay: OverlayHandle | null = null;
   let sync: SyncHandle | null = null;
   let menu: MenuHandle | null = null;
   let fetchCtl: AbortController | null = null;
+  let ccObserver: MutationObserver | null = null;
+  let unsubDisplayedLang: (() => void) | null = null;
   let activeSetupKey: string | null = null;
   let setupSeq = 0;
 
@@ -70,16 +94,46 @@ export function startDualSubtitles(
     overlay = null;
     menu?.stop();
     menu = null;
+    ccObserver?.disconnect();
+    ccObserver = null;
+    unsubDisplayedLang?.();
+    unsubDisplayedLang = null;
     tracks = [];
     primary = null;
     secondary = { type: 'off' };
     secondaryUserOverride = false;
+    captionState = { ccOn: false, displayedLang: null };
     activeSetupKey = null;
   };
 
-  const updateOverlayVisibility = () => {
+  const visibilityRule = () =>
+    captionState.ccOn && secondary.type !== 'off';
+
+  const reevaluate = () => {
     if (!overlay) return;
-    overlay.setVisible(secondary.type !== 'off');
+    if (secondaryUserOverride) {
+      overlay.setVisible(visibilityRule());
+      return;
+    }
+    const next = pickDefaultSecondary(
+      tracks,
+      primary,
+      captionState.displayedLang,
+      prefs.secondaryLanguage,
+    );
+    const changed = !sameSelection(next, secondary);
+    secondary = next;
+    if (changed) void startSecondary();
+    overlay.setVisible(visibilityRule());
+  };
+
+  const readDisplayedLang = async (): Promise<string | null> => {
+    try {
+      return await bridgeGetDisplayedLang();
+    } catch (err) {
+      console.warn('[yt-focus] bridgeGetDisplayedLang failed', err);
+      return null;
+    }
   };
 
   const startSecondary = async () => {
@@ -88,7 +142,7 @@ export function startDualSubtitles(
       sync?.stop();
       sync = null;
       overlay?.setText('');
-      updateOverlayVisibility();
+      overlay?.setVisible(visibilityRule());
       return;
     }
     const ctl = new AbortController();
@@ -127,13 +181,13 @@ export function startDualSubtitles(
       } else if (overlay) {
         sync = startSync(video, cues, (text) => {
           overlay?.setText(text);
-          updateOverlayVisibility();
         });
       } else {
         console.warn(
           '[yt-focus] startSecondary aborted: no overlay (this is a bug)',
         );
       }
+      overlay?.setVisible(visibilityRule());
     } catch (err) {
       if (!ctl.signal.aborted) {
         console.warn('[yt-focus] secondary fetch failed', err);
@@ -170,7 +224,6 @@ export function startDualSubtitles(
     if (tracks.length === 0) return;
 
     primary = pickDefaultPrimary(tracks);
-    secondary = pickDefaultSecondary(tracks, primary, prefs.secondaryLanguage);
 
     overlay = mountOverlay(player);
     menu = injectMenu({
@@ -183,7 +236,41 @@ export function startDualSubtitles(
         void startSecondary();
       },
     });
-    void startSecondary();
+
+    // Subscribe BEFORE the bridge read so we don't miss a value that arrives
+    // between the read and the subscription.
+    unsubDisplayedLang = subscribeBridgeEvent<string | null>(
+      'displayedLang',
+      (lang) => {
+        if (lang === captionState.displayedLang) return;
+        captionState.displayedLang = lang;
+        reevaluate();
+      },
+    );
+    const initialLang = await readDisplayedLang();
+    if (stopped || setupId !== setupSeq) return;
+    // Only use the bridge snapshot if a push hasn't already given us a value;
+    // pushes that arrive during the await are fresher than the snapshot.
+    if (captionState.displayedLang == null) {
+      captionState.displayedLang = initialLang;
+    }
+
+    const ccButton = document.querySelector<HTMLElement>(sel.CC_BUTTON);
+    if (ccButton) {
+      captionState.ccOn = ccButton.getAttribute('aria-pressed') === 'true';
+      ccObserver = new MutationObserver(() => {
+        const next = ccButton.getAttribute('aria-pressed') === 'true';
+        if (next === captionState.ccOn) return;
+        captionState.ccOn = next;
+        reevaluate();
+      });
+      ccObserver.observe(ccButton, {
+        attributes: true,
+        attributeFilter: ['aria-pressed'],
+      });
+    }
+
+    reevaluate();
   };
 
   // Listen for SPA navigation. yt-navigate-finish fires after each watch-page
@@ -210,19 +297,13 @@ export function startDualSubtitles(
     },
     updatePrefs(next: Preferences) {
       const wasEnabled = prefs.dualSubtitlesEnabled;
-      const oldLang = prefs.secondaryLanguage;
       prefs = next;
       if (!wasEnabled && next.dualSubtitlesEnabled) {
         void setupForCurrentPage();
       } else if (wasEnabled && !next.dualSubtitlesEnabled) {
         tearDown();
-      } else if (
-        next.dualSubtitlesEnabled &&
-        oldLang !== next.secondaryLanguage &&
-        !secondaryUserOverride
-      ) {
-        secondary = pickDefaultSecondary(tracks, primary, next.secondaryLanguage);
-        void startSecondary();
+      } else if (next.dualSubtitlesEnabled) {
+        reevaluate();
       }
     },
   };
