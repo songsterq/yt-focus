@@ -1,4 +1,5 @@
 import { bridgeFetchText, bridgeGetTimedTextContext } from './bridge';
+import { clipOverlappingCues } from './sync';
 import { buildTimedTextUrl, type TimedTextContext } from './timedtext-url';
 import type { CaptionTrack, Cue } from './types';
 
@@ -49,7 +50,7 @@ function parseJson3(json: Json3): Cue[] {
     });
   }
   cues.sort((a, b) => a.startMs - b.startMs);
-  return cues;
+  return clipOverlappingCues(cues);
 }
 
 function parseXml(text: string): Cue[] {
@@ -73,7 +74,9 @@ function parseXml(text: string): Cue[] {
       text: decoded,
     });
   }
-  if (cues.length > 0) return cues.sort((a, b) => a.startMs - b.startMs);
+  if (cues.length > 0) {
+    return clipOverlappingCues(cues.sort((a, b) => a.startMs - b.startMs));
+  }
 
   // srv3 format: <timedtext><body><p t="ms" d="ms">[<s>]text[</s>]</p>...
   const ps = doc.querySelectorAll('body p, p');
@@ -99,7 +102,7 @@ function parseXml(text: string): Cue[] {
     cues.push({ startMs: t, endMs: t + d, text: decoded });
   }
   cues.sort((a, b) => a.startMs - b.startMs);
-  return cues;
+  return clipOverlappingCues(cues);
 }
 
 async function tryFormat(

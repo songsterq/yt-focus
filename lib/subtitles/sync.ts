@@ -5,18 +5,37 @@ export type SyncHandle = {
   setCues(cues: Cue[]): void;
 };
 
-function findActive(cues: Cue[], timeMs: number): Cue | null {
-  if (cues.length === 0) return null;
+// YouTube's auto-generated (ASR) json3 tracks are two-row "roll-up"
+// transcripts: each line's dDurationMs runs until the line after next starts,
+// so consecutive cues overlap by a whole line. A single-line overlay can only
+// show one cue at a time, so cut every cue off where the next one begins.
+// Cues must be sorted by startMs.
+export function clipOverlappingCues(cues: Cue[]): Cue[] {
+  return cues.map((c, i) => {
+    const next = cues[i + 1];
+    if (!next || next.startMs >= c.endMs) return c;
+    return { ...c, endMs: Math.max(c.startMs, next.startMs) };
+  });
+}
+
+// Returns the most recently started cue that is still showing at timeMs.
+// Binary-searches on startMs only, so it stays correct even if cues overlap.
+export function findActive(cues: Cue[], timeMs: number): Cue | null {
   let lo = 0;
   let hi = cues.length - 1;
+  let idx = -1;
   while (lo <= hi) {
     const mid = (lo + hi) >>> 1;
-    const c = cues[mid];
-    if (timeMs < c.startMs) hi = mid - 1;
-    else if (timeMs >= c.endMs) lo = mid + 1;
-    else return c;
+    if (cues[mid].startMs <= timeMs) {
+      idx = mid;
+      lo = mid + 1;
+    } else {
+      hi = mid - 1;
+    }
   }
-  return null;
+  if (idx === -1) return null;
+  const c = cues[idx];
+  return timeMs < c.endMs ? c : null;
 }
 
 export function startSync(
